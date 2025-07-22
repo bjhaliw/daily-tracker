@@ -24,60 +24,60 @@ import com.hollowlog.dailytracker.Routes
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(navHostController: NavHostController, activityViewModel: ActivityViewModel) {
-    TrackerApplicationTheme {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = { CreateCalendarTopBar(navHostController) },
-            content = { innerPadding -> CalendarContent(modifier = Modifier.padding(innerPadding), navHostController) }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CreateCalendarTopBar(navController: NavHostController) {
-    TopAppBar(
-        title = { Text("Calendar View") },
-        navigationIcon = {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Go to previous screen"
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    )
-}
-
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CalendarContent(modifier: Modifier, navHostController: NavHostController) {
     val datePickerState = rememberDatePickerState()
-
-    Column(modifier.fillMaxWidth()) {
-        DatePicker(
-            state = datePickerState
-        )
-    }
 
     // Execute when the user selects a day from the Date Picker
     LaunchedEffect(datePickerState.selectedDateMillis) {
         datePickerState.selectedDateMillis?.let { millis ->
             val stringDate = convertMillisToDate(millis)
-            navHostController.navigate(Routes.DAILY_ACTIVITY_SCREEN + "/$stringDate")
-
+            activityViewModel.setCurrentDate(LocalDate.parse(stringDate))
+            navHostController.navigate(Routes.DAILY_ACTIVITY_SCREEN) {
+                popUpTo(Routes.DAILY_ACTIVITY_SCREEN) {
+                    inclusive = true
+                }
+            }
         }
+    }
+
+    TrackerApplicationTheme {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TopAppBar(
+                    title = { Text("Calendar View") },
+                    navigationIcon = {
+                        IconButton(onClick = { navHostController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Go to previous screen"
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            },
+            content = { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxWidth()
+                ) {
+                    DatePicker(
+                        state = datePickerState
+                    )
+                }
+            }
+        )
     }
 }
 

@@ -1,12 +1,15 @@
 package com.hollowlog.dailytracker.view_model
 
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hollowlog.dailytracker.database.dao.ActivityDao
 import com.hollowlog.dailytracker.model.Activity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -14,10 +17,19 @@ class ActivityViewModel(
     private val dao: ActivityDao
 ) : ViewModel() {
 
+    val EMPTY_ACTIVITY = Activity("Empty", LocalDate.now(), "Empty", -1)
+
     // Keeps track of the currently selected date
     private val _currentDate = MutableStateFlow(LocalDate.now())
     var currentDate: StateFlow<LocalDate> = _currentDate
 
+    // Keeps track of the currently selected Activity
+    private val _selectedActivity = MutableStateFlow(EMPTY_ACTIVITY)
+    var selectedActivity: StateFlow<Activity> = _selectedActivity
+
+    ////////////////////////////
+    // CURRENT DATE FUNCTIONS //
+    ////////////////////////////
     fun decreaseCurrentDate(numDays: Long) {
         _currentDate.value = currentDate.value.minusDays(numDays)
     }
@@ -30,6 +42,20 @@ class ActivityViewModel(
         _currentDate.value = newDate
     }
 
+    ///////////////////////////////////
+    //  SELECTED ACTIVITY FUNCTIONS  //
+    ///////////////////////////////////
+    fun setSelectedActivity(activity: Activity) {
+        _selectedActivity.value = activity
+    }
+
+    fun resetSelectedActivity() {
+        _selectedActivity.value = EMPTY_ACTIVITY
+    }
+
+    ////////////////////////////
+    //  REPOSITORY FUNCTIONS  //
+    ////////////////////////////
     fun addActivity(activity: Activity) {
         viewModelScope.launch {
             dao.upsertActivity(activity)
@@ -42,11 +68,10 @@ class ActivityViewModel(
         }
     }
 
-    suspend fun deleteActivity(activity: Activity) {
+    fun deleteActivity(activity: Activity) {
         viewModelScope.launch {
-            dao.upsertActivity(activity)
+            dao.deleteActivity(activity)
         }
-        dao.deleteActivity(activity)
     }
 
     suspend fun deleteActivityById(id: Int) {

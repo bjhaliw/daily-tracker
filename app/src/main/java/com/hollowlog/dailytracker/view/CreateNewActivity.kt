@@ -41,24 +41,20 @@ import com.hollowlog.dailytracker.Routes
 import com.hollowlog.dailytracker.model.Activity
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
-import java.time.LocalDate
-
 
 @Composable
 fun CreateNewActivityScreen(
     navController: NavHostController,
-    localDate: LocalDate = LocalDate.now(),
     activityViewModel: ActivityViewModel,
 ) {
     TrackerApplicationTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            topBar = { CreateActivityTopBar(navController, localDate) },
+            topBar = { CreateActivityTopBar(navController) },
             content = { innerPadding ->
                 CreateActivityContent(
                     modifier = Modifier.padding(innerPadding),
                     activityViewModel,
-                    localDate,
                     navController
                 )
             }
@@ -68,16 +64,12 @@ fun CreateNewActivityScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateActivityTopBar(navController: NavHostController, localDate: LocalDate) {
+fun CreateActivityTopBar(navController: NavHostController) {
     TopAppBar(
         title = { Text("Create New Activity") },
         navigationIcon = {
             IconButton(onClick = {
-                navController.navigate(Routes.DAILY_ACTIVITY_SCREEN + "/${localDate}") {
-                    popUpTo(Routes.CREATE_ACTIVITY_SCREEN + Routes.CREATE_ACTIVITY_SCREEN_ARGUMENTS) {
-                        inclusive = true
-                    }
-                }
+                navController.popBackStack()
             }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -96,7 +88,6 @@ fun CreateActivityTopBar(navController: NavHostController, localDate: LocalDate)
 fun CreateActivityContent(
     modifier: Modifier,
     activityViewModel: ActivityViewModel,
-    localDate: LocalDate,
     navController: NavHostController
 ) {
     var activityNameText by remember { mutableStateOf("") }
@@ -154,9 +145,15 @@ fun CreateActivityContent(
         ) {
             FilledTonalButton(
                 onClick = {
-                    activityViewModel.addActivity(Activity(activityNameText, localDate, commentsText))
-                    navController.navigate(Routes.DAILY_ACTIVITY_SCREEN + "/${localDate}") {
-                        popUpTo(Routes.CREATE_ACTIVITY_SCREEN + Routes.CREATE_ACTIVITY_SCREEN_ARGUMENTS) {
+                    activityViewModel.addActivity(
+                        Activity(
+                            activityNameText,
+                            activityViewModel.currentDate.value,
+                            commentsText
+                        )
+                    )
+                    navController.navigate(Routes.DAILY_ACTIVITY_SCREEN) {
+                        popUpTo(Routes.DAILY_ACTIVITY_SCREEN) {
                             inclusive = true
                         }
                     }

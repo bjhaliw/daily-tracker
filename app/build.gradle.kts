@@ -67,6 +67,7 @@ dependencies {
     kapt("androidx.room:room-compiler:2.7.2")
 
     // Hilt
-//    implementation(libs.hilt.android)
-//    implementation(libs.androidx.hilt.work)
+//    implementation("androidx.hilt:hilt-work:1.0.0")
+//    annotationProcessor("androidx.hilt:hilt-compiler:1.0.0")
+//    implementation("androidx.hilt:hilt-navigation-fragment:1.0.0")
 }
