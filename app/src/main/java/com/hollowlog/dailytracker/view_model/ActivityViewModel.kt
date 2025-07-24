@@ -32,14 +32,17 @@ class ActivityViewModel(
     ////////////////////////////
     fun decreaseCurrentDate(numDays: Long) {
         _currentDate.value = currentDate.value.minusDays(numDays)
+        resetSelectedActivity()
     }
 
     fun increaseCurrentDate(numDays: Long) {
         _currentDate.value = currentDate.value.plusDays(numDays)
+        resetSelectedActivity()
     }
 
     fun setCurrentDate(newDate: LocalDate) {
         _currentDate.value = newDate
+        resetSelectedActivity()
     }
 
     ///////////////////////////////////

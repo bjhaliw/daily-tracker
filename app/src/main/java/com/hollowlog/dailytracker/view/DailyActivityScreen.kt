@@ -35,7 +35,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,8 +46,6 @@ import com.hollowlog.dailytracker.Routes
 import com.hollowlog.dailytracker.model.Activity
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
-import kotlinx.coroutines.flow.last
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -77,7 +74,7 @@ fun DailyActivityScreen(
                     Spacer(Modifier.weight(1f, true))
                     FloatingActionButton(
                         elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation(),
-                        onClick = { navController.navigate(Routes.CREATE_ACTIVITY_SCREEN) },
+                        onClick = { navController.navigate(Routes.CREATE_ACTIVITY_SCREEN + "/${false}") },
                         shape = CircleShape
                     ) {
                         Icon(Icons.Filled.Add, "Create new activity")
@@ -108,7 +105,6 @@ fun DailyActivityScreen(
                         ) {
                             IconButton(onClick = {
                                 activityViewModel.decreaseCurrentDate(1)
-                                activityViewModel.resetSelectedActivity()
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Select Previous Day")
                             }
@@ -123,7 +119,6 @@ fun DailyActivityScreen(
 
                             IconButton(onClick = {
                                 activityViewModel.increaseCurrentDate(1)
-                                activityViewModel.resetSelectedActivity()
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Select Next Day")
                             }
@@ -192,7 +187,9 @@ fun TopBar(
                     Icon(Icons.Sharp.Delete, "Delete selected activity", tint = Color.Red)
                 }
                 IconButton(
-                    onClick = { navController.navigate(Routes.EDIT_ACTIVITY_SCREEN) }
+                    onClick = {
+                        navController.navigate(Routes.CREATE_ACTIVITY_SCREEN + "/true")
+                    }
                 ) {
                     Icon(Icons.Sharp.Edit, "Edit selected activity")
                 }

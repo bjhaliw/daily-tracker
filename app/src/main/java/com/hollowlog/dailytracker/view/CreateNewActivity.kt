@@ -29,6 +29,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,9 +44,10 @@ import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
 
 @Composable
-fun CreateNewActivityScreen(
+fun CreateAndEditActivityScreen(
     navController: NavHostController,
     activityViewModel: ActivityViewModel,
+    isEdit: Boolean
 ) {
     TrackerApplicationTheme {
         Scaffold(
@@ -55,7 +57,8 @@ fun CreateNewActivityScreen(
                 CreateActivityContent(
                     modifier = Modifier.padding(innerPadding),
                     activityViewModel,
-                    navController
+                    navController,
+                    isEdit
                 )
             }
         )
@@ -88,16 +91,17 @@ fun CreateActivityTopBar(navController: NavHostController) {
 fun CreateActivityContent(
     modifier: Modifier,
     activityViewModel: ActivityViewModel,
-    navController: NavHostController
+    navController: NavHostController,
+    isEdit: Boolean
 ) {
-    var activityNameText by remember { mutableStateOf("") }
+    val selectedActivity by activityViewModel.selectedActivity.collectAsState()
+    val initialName = if (isEdit) selectedActivity.name else ""
+    val initialComments = if (isEdit) selectedActivity.comments else ""
+
+    var activityNameText by remember { mutableStateOf(initialName) }
     var activityNameError by remember { mutableStateOf(false) }
-
-    var commentsText by remember { mutableStateOf("") }
-    var commentsError by remember { mutableStateOf(false) }
-
+    var commentsText by remember { mutableStateOf(initialComments) }
     var isChecked by remember { mutableStateOf(false) }
-
     var isDialogOpen by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxWidth()) {
@@ -114,13 +118,9 @@ fun CreateActivityContent(
 
         OutlinedTextField(
             value = commentsText,
-            onValueChange = { input ->
-                commentsText = input
-                commentsError = input.isBlank()
-            },
+            onValueChange = { input -> commentsText = input },
             label = { Text("Comments") },
             modifier = Modifier.fillMaxWidth(),
-            isError = commentsError
         )
 
         Row(
@@ -145,13 +145,20 @@ fun CreateActivityContent(
         ) {
             FilledTonalButton(
                 onClick = {
-                    activityViewModel.addActivity(
-                        Activity(
-                            activityNameText,
-                            activityViewModel.currentDate.value,
-                            commentsText
-                        )
+
+                    val activity = Activity(
+                        activityNameText,
+                        activityViewModel.currentDate.value,
+                        commentsText
                     )
+
+                    if (isEdit) {
+                        activity.id = activityViewModel.selectedActivity.value.id
+                        activityViewModel.updateActivity(activity)
+                    } else {
+                        activityViewModel.addActivity(activity)
+                    }
+
                     navController.navigate(Routes.DAILY_ACTIVITY_SCREEN) {
                         popUpTo(Routes.DAILY_ACTIVITY_SCREEN) {
                             inclusive = true

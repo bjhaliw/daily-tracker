@@ -19,5 +19,5 @@ data class Activity(
     val comments: String,
 
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 0
+    var id: Int = 0
 )
