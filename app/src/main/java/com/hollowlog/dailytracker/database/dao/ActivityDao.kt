@@ -25,6 +25,13 @@ interface ActivityDao {
     @Query("SELECT * FROM activities WHERE id = :id")
     fun getActivityById(id: Int): Flow<Activity>
 
-    @Query("SELECT * FROM activities WHERE date = :date")
-    fun getAllActivitiesByDate(date: String): Flow<List<Activity>>
+    @Query("SELECT * FROM activities WHERE startDate = :date")
+    fun getAllActivitiesByStartDate(date: String): Flow<List<Activity>>
+
+    @Query("SELECT * FROM activities WHERE (:date BETWEEN startDate AND endDate) OR (startDate <= :date AND endDate IS \"\")")
+    fun getAllActivitiesForCurrentDate(date: String): Flow<List<Activity>>
+
+    @Query("SELECT * FROM activities WHERE startDate BETWEEN :startDate AND :endDate")
+    fun getAllActivitiesBetweenStartAndEndDates(startDate: String, endDate: String): Flow<List<Activity>>
+
 }

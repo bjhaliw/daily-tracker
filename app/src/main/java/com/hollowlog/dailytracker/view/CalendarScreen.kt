@@ -18,21 +18,28 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import com.hollowlog.dailytracker.Routes
+import com.hollowlog.dailytracker.core.convertMillisToDate
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
-import java.text.SimpleDateFormat
 import java.time.LocalDate
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(navHostController: NavHostController, activityViewModel: ActivityViewModel) {
-    val datePickerState = rememberDatePickerState()
+    val currentDate by activityViewModel.currentDate.collectAsState()
+    val datePickerState = rememberDatePickerState(
+//        initialSelectedDateMillis = currentDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+    )
+    val startDateString = convertMillisToDate(datePickerState.displayedMonthMillis)
+    val startDateLocal = LocalDate.parse(startDateString)
+    val endDateLocal = startDateLocal.withDayOfMonth(startDateLocal.month.length(startDateLocal.isLeapYear))
+    val monthActivities = activityViewModel.getAllActivitiesBetweenDates(startDateString, endDateLocal.toString())
+    val result by monthActivities.collectAsState(initial = emptyList())
 
     // Execute when the user selects a day from the Date Picker
     LaunchedEffect(datePickerState.selectedDateMillis) {
@@ -48,41 +55,29 @@ fun CalendarScreen(navHostController: NavHostController, activityViewModel: Acti
     }
 
     TrackerApplicationTheme {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = {
-                TopAppBar(
-                    title = { Text("Calendar View") },
-                    navigationIcon = {
-                        IconButton(onClick = { navHostController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Go to previous screen"
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+        Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+            TopAppBar(
+                title = { Text("Calendar View") }, navigationIcon = {
+                    IconButton(onClick = { navHostController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Go to previous screen"
+                        )
+                    }
+                }, colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
-            },
-            content = { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxWidth()
-                ) {
-                    DatePicker(
-                        state = datePickerState
-                    )
-                }
+            )
+        }, content = { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxWidth()
+            ) {
+                DatePicker(
+                    state = datePickerState
+                )
             }
-        )
+        })
     }
-}
-
-fun convertMillisToDate(millis: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    formatter.timeZone = TimeZone.getTimeZone("UTC")
-    return formatter.format(Date(millis))
 }

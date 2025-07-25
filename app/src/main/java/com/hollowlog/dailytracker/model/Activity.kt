@@ -14,7 +14,9 @@ import java.time.LocalDate
 data class Activity(
     val name: String,
 
-    val date: LocalDate,
+    val startDate: LocalDate,
+
+    val endDate: LocalDate?,
 
     val comments: String,
 

@@ -1,15 +1,12 @@
 package com.hollowlog.dailytracker.view_model
 
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hollowlog.dailytracker.database.dao.ActivityDao
 import com.hollowlog.dailytracker.model.Activity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -17,7 +14,7 @@ class ActivityViewModel(
     private val dao: ActivityDao
 ) : ViewModel() {
 
-    val EMPTY_ACTIVITY = Activity("Empty", LocalDate.now(), "Empty", -1)
+    val EMPTY_ACTIVITY = Activity("Empty", LocalDate.now(), LocalDate.now(), "Empty", -1)
 
     // Keeps track of the currently selected date
     private val _currentDate = MutableStateFlow(LocalDate.now())
@@ -85,11 +82,20 @@ class ActivityViewModel(
         return dao.getAllActivities()
     }
 
-    fun getAllActivitiesByDate(date: String): Flow<List<Activity>> {
-        return dao.getAllActivitiesByDate(date)
+    fun getAllActivitiesByStartDate(date: String): Flow<List<Activity>> {
+        return dao.getAllActivitiesByStartDate(date)
     }
 
     fun getActivityById(id: Int): Flow<Activity> {
         return dao.getActivityById(id)
     }
+
+    fun getAllActivitiesBetweenDates(startDate: String, endDate: String): Flow<List<Activity>> {
+        return dao.getAllActivitiesBetweenStartAndEndDates(startDate, endDate)
+    }
+
+    fun getAllActivitiesForCurrentDate(date: String): Flow<List<Activity>> {
+        return dao.getAllActivitiesForCurrentDate(date)
+    }
+
 }
