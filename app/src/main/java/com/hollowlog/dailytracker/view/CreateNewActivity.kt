@@ -173,25 +173,33 @@ fun CreateActivityContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             FilledTonalButton(
+                enabled = !activityNameError,
                 onClick = {
-                    val activity = Activity(
-                        activityNameText,
-                        startDate,
-                        if (isChecked) endDate else startDate,
-                        commentsText
-                    )
-
-                    if (isEdit) {
-                        activity.id = activityViewModel.selectedActivity.value.id
-                        activityViewModel.updateActivity(activity)
-                        activityViewModel.setSelectedActivity(activity)
+                    if (activityNameText.isBlank()) {
+                        activityNameError = true
                     } else {
-                        activityViewModel.addActivity(activity)
-                    }
+                        // Create a new activity
+                        val activity = Activity(
+                            activityNameText,
+                            startDate,
+                            if (isChecked) endDate else startDate,
+                            commentsText
+                        )
 
-                    navController.navigate(Routes.DAILY_ACTIVITY_SCREEN) {
-                        popUpTo(Routes.DAILY_ACTIVITY_SCREEN) {
-                            inclusive = true
+                        // If the user is editing an activity, then set the id for the created activity
+                        if (isEdit) {
+                            activity.id = activityViewModel.selectedActivity.value.id
+                            activityViewModel.updateActivity(activity)
+                            activityViewModel.setSelectedActivity(activity)
+                        } else {
+                            activityViewModel.addActivity(activity)
+                        }
+
+                        // Return back to the selected day
+                        navController.navigate(Routes.DAILY_ACTIVITY_SCREEN) {
+                            popUpTo(Routes.DAILY_ACTIVITY_SCREEN) {
+                                inclusive = true
+                            }
                         }
                     }
                 }) {
