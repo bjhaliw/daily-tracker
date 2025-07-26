@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,6 +49,7 @@ import com.hollowlog.dailytracker.model.Activity
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -109,8 +113,8 @@ fun CreateActivityContent(
     var activityNameText by remember { mutableStateOf(initialName) }
     var activityNameError by remember { mutableStateOf(false) }
     var commentsText by remember { mutableStateOf(initialComments) }
-    var isChecked by remember { mutableStateOf(false) }
-    var startDate by remember { mutableStateOf(currDate) }
+    var isChecked by remember { mutableStateOf(isCheckboxMarked(isEdit, selectedActivity)) }
+    var startDate by remember { mutableStateOf(if (isEdit) selectedActivity.startDate else currDate) }
     var endDate by remember { mutableStateOf<LocalDate?>(null) }
 
     // How much space should be between the components
@@ -142,7 +146,9 @@ fun CreateActivityContent(
         CreateAndEditActivityDateFields(
             getStartDate = { date -> startDate = date },
             getEndDate = { date -> endDate = date },
-            showBoth = isChecked
+            showBoth = isChecked,
+            initialStartDate = startDate,
+            initialEndDate = if (isEdit) selectedActivity.endDate else null
         )
 
         Spacer(SPACE_BETWEEN)
@@ -178,6 +184,7 @@ fun CreateActivityContent(
                     if (isEdit) {
                         activity.id = activityViewModel.selectedActivity.value.id
                         activityViewModel.updateActivity(activity)
+                        activityViewModel.setSelectedActivity(activity)
                     } else {
                         activityViewModel.addActivity(activity)
                     }
@@ -198,21 +205,23 @@ fun CreateActivityContent(
 @Composable
 fun CreateAndEditActivityDateFields(
     getStartDate: (LocalDate) -> Unit,
-    getEndDate: (LocalDate) -> Unit,
-    showBoth: Boolean
+    getEndDate: (LocalDate?) -> Unit,
+    showBoth: Boolean,
+    initialStartDate: LocalDate,
+    initialEndDate: LocalDate?
 ) {
-    val selectedStartDate = remember { mutableStateOf<LocalDate?>(null) }
-    val selectedEndDate = remember { mutableStateOf<LocalDate?>(null) }
+    val selectedStartDate = remember { mutableStateOf(initialStartDate) }
+    val selectedEndDate = remember { mutableStateOf(initialEndDate) }
     val showStartDatePicker = remember { mutableStateOf(false) }
     val showEndDatePicker = remember { mutableStateOf(false) }
 
     val formatterPattern = DateTimeFormatter.ofPattern("MMM dd, yyyy")
-    val formattedStartDate = selectedStartDate.value?.format(formatterPattern) ?: ""
+    val formattedStartDate = selectedStartDate.value.format(formatterPattern) ?: ""
     val formattedEndDate = selectedEndDate.value?.format(formatterPattern) ?: ""
 
     // Pass the selected values back up to the caller
-    selectedStartDate.value?.let { getStartDate(it) }
-    selectedEndDate.value?.let { getEndDate(it) }
+    getStartDate(selectedStartDate.value)
+    getEndDate(selectedEndDate.value)
 
     OutlinedTextField(
         value = formattedStartDate,
@@ -247,24 +256,34 @@ fun CreateAndEditActivityDateFields(
     if (showBoth) {
         Spacer(Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = formattedEndDate,
-            onValueChange = { /* Do nothing as it's read-only */ },
-            label = { Text("End Date") },
-            readOnly = true,
-            supportingText = { Text("Leave blank if not completed yet") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .pointerInput(selectedEndDate) {
-                    awaitEachGesture {
-                        awaitFirstDown(pass = PointerEventPass.Initial)
-                        val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                        if (upEvent != null) {
-                            showEndDatePicker.value = true
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = formattedEndDate,
+                onValueChange = { /* Do nothing as it's read-only */ },
+                label = { Text("End Date") },
+                readOnly = true,
+                supportingText = { Text("Leave blank if not completed yet") },
+                modifier = Modifier
+                    .weight(1f)
+                    .pointerInput(selectedEndDate) {
+                        awaitEachGesture {
+                            awaitFirstDown(pass = PointerEventPass.Initial)
+                            val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                            if (upEvent != null) {
+                                showEndDatePicker.value = true
+                            }
                         }
                     }
-                }
-        )
+            )
+            IconButton(onClick = { selectedEndDate.value = null }) {
+                Icon(Icons.Filled.Clear, "Clear end date")
+            }
+        }
+
 
         if (showEndDatePicker.value) {
             DateDialog(
@@ -274,7 +293,8 @@ fun CreateAndEditActivityDateFields(
                         selectedEndDate.value = LocalDate.ofEpochDay(millis / (1000 * 60 * 60 * 24))
                     }
                     showEndDatePicker.value = false
-                }
+                },
+                selectableDates = OnlyFutureDates(startDate = selectedStartDate.value)
             )
         }
 
@@ -283,8 +303,12 @@ fun CreateAndEditActivityDateFields(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateDialog(onDismiss: () -> Unit, onConfirm: (DatePickerState) -> Unit) {
-    val datePickerState = rememberDatePickerState()
+fun DateDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (DatePickerState) -> Unit,
+    selectableDates: SelectableDates = DatePickerDefaults.AllDates
+) {
+    val datePickerState = rememberDatePickerState(selectableDates = selectableDates)
 
     DatePickerDialog(
         onDismissRequest = { onDismiss() },
@@ -300,5 +324,21 @@ fun DateDialog(onDismiss: () -> Unit, onConfirm: (DatePickerState) -> Unit) {
         }
     ) {
         DatePicker(state = datePickerState)
+    }
+}
+
+fun isCheckboxMarked(isEdit: Boolean, activity: Activity): Boolean {
+    return !(!isEdit || activity.startDate == activity.endDate)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+class OnlyFutureDates(private val startDate: LocalDate) : SelectableDates {
+
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        return utcTimeMillis >= startDate.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+    }
+
+    override fun isSelectableYear(year: Int): Boolean {
+        return year >= startDate.year
     }
 }

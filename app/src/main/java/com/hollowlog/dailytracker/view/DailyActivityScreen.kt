@@ -81,7 +81,10 @@ fun DailyActivityScreen(
                 BottomAppBar {
                     Spacer(Modifier.weight(1f, true))
 
-                    IconButton(onClick = { activityViewModel.setCurrentDate(LocalDate.now()) }) {
+                    IconButton(
+                        onClick = { activityViewModel.setCurrentDate(LocalDate.now()) },
+                        enabled = currentDate != LocalDate.now()
+                    ) {
                         Icon(Icons.Filled.Home, contentDescription = "Go to current date")
                     }
                     Spacer(Modifier.weight(1f, true))

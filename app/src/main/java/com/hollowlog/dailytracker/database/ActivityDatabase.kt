@@ -8,7 +8,7 @@ import com.hollowlog.dailytracker.model.Activity
 
 @Database(
     entities = [Activity::class],
-    version = 2
+    version = 1
 )
 @TypeConverters(Converters::class)
 abstract class ActivityDatabase : RoomDatabase() {

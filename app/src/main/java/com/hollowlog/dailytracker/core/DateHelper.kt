@@ -2,6 +2,7 @@ package com.hollowlog.dailytracker.core
 
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
@@ -13,6 +14,10 @@ fun convertMillisToDate(millis: Long): String {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     formatter.timeZone = TimeZone.getTimeZone("UTC")
     return formatter.format(Date(millis))
+}
+
+fun getEpochMillisFromLocalDate(date: LocalDate): Long {
+    return date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
 }
 
 fun convertDateToFormattedString(date: LocalDate): String {
