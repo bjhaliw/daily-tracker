@@ -154,12 +154,16 @@ fun DailyActivityScreen(
                                         .padding(4.dp)
                                         .border(
                                             width = 2.dp,
-                                            color = if (selectedActivity.id == currActivity.id) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.inversePrimary,
+                                            color =
+                                                if (selectedActivity.id == currActivity.id) {
+                                                    MaterialTheme.colorScheme.secondary
+                                                } else {
+                                                    MaterialTheme.colorScheme.inversePrimary
+                                                },
                                             shape = MaterialTheme.shapes.medium
                                         )
                                         .padding(4.dp)
                                         .clickable {
-
                                             if (selectedActivity.id == currActivity.id) {
                                                 activityViewModel.resetSelectedActivity()
                                             } else {

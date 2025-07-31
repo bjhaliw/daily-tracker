@@ -1,16 +1,23 @@
 package com.hollowlog.dailytracker.view
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -21,6 +28,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,11 +43,14 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -48,6 +59,7 @@ import com.hollowlog.dailytracker.Routes
 import com.hollowlog.dailytracker.model.Activity
 import com.hollowlog.dailytracker.ui.theme.TrackerApplicationTheme
 import com.hollowlog.dailytracker.view_model.ActivityViewModel
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -61,7 +73,7 @@ fun CreateAndEditActivityScreen(
     TrackerApplicationTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            topBar = { CreateActivityTopBar(navController) },
+            topBar = { CreateActivityTopBar(navController, isEdit) },
             content = { innerPadding ->
                 CreateActivityContent(
                     modifier = Modifier.padding(innerPadding),
@@ -76,9 +88,9 @@ fun CreateAndEditActivityScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateActivityTopBar(navController: NavHostController) {
+fun CreateActivityTopBar(navController: NavHostController, isEdit: Boolean) {
     TopAppBar(
-        title = { Text("Create New Activity") },
+        title = { Text(if (isEdit) "Edit Activity" else "New Activity") },
         navigationIcon = {
             IconButton(onClick = {
                 navController.popBackStack()
@@ -120,7 +132,17 @@ fun CreateActivityContent(
     // How much space should be between the components
     val SPACE_BETWEEN = Modifier.height(8.dp)
 
-    Column(modifier.fillMaxWidth()) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(2.dp)
+    ) {
+
+        Column {
+            Text(text = "Activity Information")
+            HorizontalDivider(color = MaterialTheme.colorScheme.primary)
+        }
+
         OutlinedTextField(
             value = activityNameText,
             onValueChange = { input ->
@@ -140,6 +162,13 @@ fun CreateActivityContent(
             label = { Text("Comments") },
             modifier = Modifier.fillMaxWidth(),
         )
+
+        Spacer(SPACE_BETWEEN)
+
+        Column {
+            Text(text = "Date Information")
+            HorizontalDivider(color = MaterialTheme.colorScheme.primary)
+        }
 
         Spacer(SPACE_BETWEEN)
 
@@ -164,6 +193,15 @@ fun CreateActivityContent(
             )
             Text(text = "This activity spans multiple days")
         }
+
+        Spacer(SPACE_BETWEEN)
+
+        Column {
+            Text(text = "Repeating Information")
+            HorizontalDivider(color = MaterialTheme.colorScheme.primary)
+        }
+
+        RepeatingInformation()
 
         Spacer(SPACE_BETWEEN)
 
@@ -306,6 +344,65 @@ fun CreateAndEditActivityDateFields(
             )
         }
 
+    }
+}
+
+@Composable
+fun RepeatingInformation() {
+
+    var doesActivityRepeat by remember { mutableStateOf(false) }
+    val selectedDays = remember { mutableStateListOf<String>() }
+    val dayScrollState = rememberScrollState()
+
+    if (doesActivityRepeat) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp)
+                .horizontalScroll(dayScrollState)
+        ) {
+            DayOfWeek.entries.forEach { day ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        onCheckedChange = {
+                            if (selectedDays.contains(day.name)) {
+                                selectedDays.remove(day.name)
+                            } else {
+                                selectedDays.add(day.name)
+                            }
+                        }, checked = selectedDays.contains(day.name)
+                    )
+                    Text(day.name)
+                }
+            }
+        }
+
+        Canvas(Modifier.fillMaxWidth()) {
+            // Calculate how quickly the scrollbar should grow
+            val max = (dayScrollState.maxValue / 1f).coerceAtLeast(size.width)
+            val min = size.width.coerceAtMost(dayScrollState.maxValue / 1f)
+            val scrollWidth = (dayScrollState.value / 1f) / (max / min)
+
+            drawLine(
+                start = Offset(x = 0f, y = 0f),
+                end = Offset(x = scrollWidth, y = 0f),
+                color = Color.Blue,
+                strokeWidth = 2.dp.toPx()
+            )
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Checkbox(onCheckedChange = { doesActivityRepeat = !doesActivityRepeat }, checked = doesActivityRepeat)
+        Text("This activity repeats")
     }
 }
 
